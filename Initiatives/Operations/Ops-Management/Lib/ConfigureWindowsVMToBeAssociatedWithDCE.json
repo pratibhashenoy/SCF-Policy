@@ -1,0 +1,211 @@
+{
+  "properties": {
+    "displayName": "ConfigureWindowsVMToBeAssociatedWithDCE",
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "metadata": {
+      "category": "Ops-Management"
+    },
+    "name": "ConfigureWindowsVMToBeAssociatedWithDCE",
+    "parameters": {
+      "effect": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Effect",
+          "description": "Enable or disable the execution of the policy."
+        },
+        "allowedValues": [
+          "DeployIfNotExists",
+          "Disabled",
+          "AuditIfNotExists"
+        ],
+        "defaultValue": "DeployIfNotExists"
+      },
+      "eastus2DcrResourceId": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Data Collection Rule Resource Id or Data Collection Endpoint Resource Id for East US 2",
+          "description": "Resource Id of the Data Collection Rule or the Data Collection Endpoint to be applied on the Windows machines in East US 2.",
+          "portalReview": "true"
+        }
+      },
+      "westusDcrResourceId": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Data Collection Rule Resource Id or Data Collection Endpoint Resource Id for West US",
+          "description": "Resource Id of the Data Collection Rule or the Data Collection Endpoint to be applied on the Windows machines in West US.",
+          "portalReview": "true"
+        }
+      },
+      "centralindiaDcrResourceId": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Data Collection Rule Resource Id or Data Collection Endpoint Resource Id for Central India",
+          "description": "Resource Id of the Data Collection Rule or the Data Collection Endpoint to be applied on the Windows machines in Central India.",
+          "portalReview": "true"
+        }
+      },
+      "centralusDcrResourceId": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Data Collection Rule Resource Id or Data Collection Endpoint Resource Id for Central US",
+          "description": "Resource Id of the Data Collection Rule or the Data Collection Endpoint to be applied on the Windows machines in Central US.",
+          "portalReview": "true"
+        }
+      },
+      "resourceType": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Resource Type",
+          "description": "Either a Data Collection Rule (DCR) or a Data Collection Endpoint (DCE)",
+          "portalReview": "true"
+        },
+        "allowedValues": [
+          "Microsoft.Insights/dataCollectionRules",
+          "Microsoft.Insights/dataCollectionEndpoints"
+        ],
+        "defaultValue": "Microsoft.Insights/dataCollectionEndpoints"
+      }
+    },
+    "policyRule": {
+      "if": {
+        "allOf": [
+          {
+            "field": "type",
+            "equals": "Microsoft.Compute/virtualMachines"
+          },
+          {
+            "field": "Microsoft.Compute/virtualMachines/storageProfile.osDisk.osType",
+            "equals": "Windows"
+          },
+          {
+            "anyOf": [
+              {
+                "field": "location",
+                "equals": "eastus2"
+              },
+              {
+                "field": "location",
+                "equals": "westus"
+              },
+              {
+                "field": "location",
+                "equals": "centralindia"
+              },
+              {
+                "field": "location",
+                "equals": "centralus"
+              }
+            ]
+          }
+        ]
+      },
+      "then": {
+        "effect": "[parameters('effect')]",
+        "details": {
+          "type": "Microsoft.Insights/dataCollectionRuleAssociations",
+          "roleDefinitionIds": [
+            "/providers/microsoft.authorization/roleDefinitions/749f88d5-cbae-40b8-bcfc-e573ddc772fa",
+            "/providers/microsoft.authorization/roleDefinitions/92aaf0da-9dab-42b6-94a3-d43ce8d16293"
+          ],
+          "evaluationDelay": "AfterProvisioning",
+          "existenceCondition": {
+            "anyOf": [
+              {
+                "field": "Microsoft.Insights/dataCollectionRuleAssociations/dataCollectionRuleId",
+                "equals": "[if(equals(field('location'), 'eastus2'), parameters('eastus2DcrResourceId'), if(equals(field('location'), 'westus'), parameters('westusDcrResourceId'), if(equals(field('location'), 'centralindia'), parameters('centralindiaDcrResourceId'), parameters('centralusDcrResourceId'))))]"
+              },
+              {
+                "field": "Microsoft.Insights/dataCollectionRuleAssociations/dataCollectionEndpointId",
+                "equals": "[if(equals(field('location'), 'eastus2'), parameters('eastus2DcrResourceId'), if(equals(field('location'), 'westus'), parameters('westusDcrResourceId'), if(equals(field('location'), 'centralindia'), parameters('centralindiaDcrResourceId'), parameters('centralusDcrResourceId'))))]"
+              }
+            ]
+          },
+          "deployment": {
+            "properties": {
+              "mode": "incremental",
+              "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {
+                  "resourceName": {
+                    "type": "string"
+                  },
+                  "location": {
+                    "type": "string"
+                  },
+                  "eastus2DcrResourceId": {
+                    "type": "string"
+                  },
+                  "westusDcrResourceId": {
+                    "type": "string"
+                  },
+                  "centralindiaDcrResourceId": {
+                    "type": "string"
+                  },
+                  "centralusDcrResourceId": {
+                    "type": "string"
+                  },
+                  "resourceType": {
+                    "type": "string"
+                  }
+                },
+                "variables": {
+                  "dcrAssociationName": "[concat('assoc-', uniqueString(concat(parameters('resourceName'), if(equals(parameters('location'), 'eastus2'), parameters('eastus2DcrResourceId'), if(equals(parameters('location'), 'westus'), parameters('westusDcrResourceId'), if(equals(parameters('location'), 'centralindia'), parameters('centralindiaDcrResourceId'), parameters('centralusDcrResourceId')))))))]",
+                  "dceAssociationName": "configurationAccessEndpoint",
+                  "dcrResourceType": "Microsoft.Insights/dataCollectionRules",
+                  "dceResourceType": "Microsoft.Insights/dataCollectionEndpoints"
+                },
+                "resources": [
+                  {
+                    "condition": "[equals(parameters('resourceType'), variables('dcrResourceType'))]",
+                    "name": "[variables('dcrAssociationName')]",
+                    "type": "Microsoft.Insights/dataCollectionRuleAssociations",
+                    "apiVersion": "2021-04-01",
+                    "properties": {
+                      "dataCollectionRuleId": "[if(equals(parameters('location'), 'eastus2'), parameters('eastus2DcrResourceId'), if(equals(parameters('location'), 'westus'), parameters('westusDcrResourceId'), if(equals(parameters('location'), 'centralindia'), parameters('centralindiaDcrResourceId'), parameters('centralusDcrResourceId'))))]"
+                    },
+                    "scope": "[concat('Microsoft.Compute/virtualMachines/', parameters('resourceName'))]"
+                  },
+                  {
+                    "condition": "[equals(parameters('resourceType'), variables('dceResourceType'))]",
+                    "name": "[variables('dceAssociationName')]",
+                    "type": "Microsoft.Insights/dataCollectionRuleAssociations",
+                    "apiVersion": "2021-04-01",
+                    "properties": {
+                      "dataCollectionEndpointId": "[if(equals(parameters('location'), 'eastus2'), parameters('eastus2DcrResourceId'), if(equals(parameters('location'), 'westus'), parameters('westusDcrResourceId'), if(equals(parameters('location'), 'centralindia'), parameters('centralindiaDcrResourceId'), parameters('centralusDcrResourceId'))))]"
+                    },
+                    "scope": "[concat('Microsoft.Compute/virtualMachines/', parameters('resourceName'))]"
+                  }
+                ]
+              },
+              "parameters": {
+                "resourceName": {
+                  "value": "[field('name')]"
+                },
+                "location": {
+                  "value": "[field('location')]"
+                },
+                "eastus2DcrResourceId": {
+                  "value": "[parameters('eastus2DcrResourceId')]"
+                },
+                "westusDcrResourceId": {
+                  "value": "[parameters('westusDcrResourceId')]"
+                },
+                "centralindiaDcrResourceId": {
+                  "value": "[parameters('centralindiaDcrResourceId')]"
+                },
+                "centralusDcrResourceId": {
+                  "value": "[parameters('centralusDcrResourceId')]"
+                },
+                "resourceType": {
+                  "value": "[parameters('resourceType')]"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

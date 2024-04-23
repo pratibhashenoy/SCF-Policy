@@ -1,0 +1,32 @@
+{
+    "properties": {
+      "displayName": "Custom Policy Display Name",
+      "policyType": "Custom",
+      "mode": "Indexed",
+      "metadata": {
+        "category": "Initiative Category"
+      },
+      "name": "CustomPolicy-1",
+      "policyRule": {
+        "if": {
+          "not": {
+            "field": "location",
+            "in": "[parameters('allowedLocations')]"
+          }
+        },
+        "then": {
+          "effect": "audit"
+        }
+      },
+      "parameters": {
+        "allowedLocations": {
+          "type": "Array",
+          "metadata": {
+            "description": "The list of allowed locations for resources.",
+            "displayName": "Allowed locations",
+            "strongType": "location"
+          }
+        }
+      }
+    }
+  }

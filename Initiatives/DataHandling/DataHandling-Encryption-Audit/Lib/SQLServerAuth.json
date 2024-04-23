@@ -1,0 +1,43 @@
+{
+    "properties": {
+      "displayName": "SQL Server should use Microsoft Entra for authentication",
+      "policyType": "Custom",
+      "mode": "All",
+      "description": "Create SQL Server with Microsoft Entra Authentication",
+      "metadata": {
+        "category": "DataHandling-Encryption-Audit"
+      },
+      "name": "SQLServerAuth",
+      "parameters": {
+        "effect": {
+          "type": "String",
+          "allowedValues": [
+            "Audit",
+            "Deny",
+            "Disabled"
+          ],
+          "defaultValue": "Deny"
+        }
+      },
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "equals": "Microsoft.Sql/servers",
+              "field": "type"
+            },
+            {
+              "not": {
+                "field": "Microsoft.Sql/servers/administrators.azureADOnlyAuthentication",
+                "like": "true"
+              }
+            }
+          ]
+        },
+        "then": {
+          "effect": "[parameters('effect')]"
+        }
+      }
+    }
+  }
+  

@@ -1,0 +1,101 @@
+name: "OperationsPipeline"
+
+on:
+ workflow_dispatch:
+    inputs:
+      category:
+        type: choice
+        description: "Select the Initiative"
+        required: false
+        options:  
+          - Ops-Alerting-Audit
+          - Ops-Cost-Management-Audit
+          - Ops-Cost-Management-Enable
+          - Ops-Logging-Audit
+          - Ops-Logging-Enable
+          - Ops-Management
+          - Ops-Monitoring-Audit
+          - Ops-Monitoring-Enable
+          - Ops-Threat-Protection-Audit
+          - Ops-Threat-Protection-Enable
+      apply:
+        description: "Apply"
+        required: true
+        type: boolean
+
+jobs:
+  terraform-plan:
+    name: 'Terraform Plan'
+    environment:
+      name: SCF-Dev-Plan
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Initiatives/Operations/${{ github.event.inputs.category }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: SSH Setup
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Terraform Init
+        run: terraform init -backend-config="resource_group_name=rg-poc-dev-01" -backend-config="storage_account_name=sttfiacpocdeveu201" -backend-config="container_name=poccontainer" -backend-config="key=${{ github.event.inputs.category }}.tfstate"
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -out=tf_plan
+          echo "TF_PLAN_FILE=tf_plan" >> $GITHUB_ENV  # Set the TF_PLAN_FILE environment variable
+
+  terraform-apply:
+    name: 'Terraform Apply'
+    needs: terraform-plan
+    if: success('terraform-plan') && github.event.inputs.apply == 'true'
+    environment:
+      name: SCF-Dev-Apply
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: Initiatives/Operations/${{ github.event.inputs.category }}
+        
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: SSH Setup
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          
+      - name: Terraform Init
+        run: terraform init -backend-config="resource_group_name=rg-poc-dev-01" -backend-config="storage_account_name=sttfiacpocdeveu201" -backend-config="container_name=poccontainer" -backend-config="key=${{ github.event.inputs.category }}.tfstate"
+
+      - name: Terraform Apply
+        run: terraform apply ${{ env.TF_PLAN_FILE }} --auto-approve

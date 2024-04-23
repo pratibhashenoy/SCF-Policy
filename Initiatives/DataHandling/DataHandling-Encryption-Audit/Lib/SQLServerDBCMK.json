@@ -1,0 +1,43 @@
+{
+    "properties": {
+      "displayName": "SQL Server DB should be encrypted with a Customer Managed Key (CMK)",
+      "policyType": "Custom",
+      "mode": "All",
+      "description": "Create SQL Server DB with customer-managed keys encryption",
+      "metadata": {
+        "category": "DataHandling-Encryption-Audit"
+      },
+      "name": "SQLServerDBCMK",
+      "parameters": {
+        "effect": {
+          "type": "String",
+          "allowedValues": [
+            "Audit",
+            "Deny",
+            "Disabled"
+          ],
+          "defaultValue": "Deny"
+        }
+      },
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "equals": "Microsoft.Sql/servers/databases",
+              "field": "type"
+            },
+            {
+              "not": {
+                "field": "Microsoft.Sql/servers/databases/encryptionProtector",
+                "like": "https://kv*"
+              }
+            }
+          ]
+        },
+        "then": {
+          "effect": "[parameters('effect')]"
+        }
+      }
+    }
+  }
+  

@@ -1,0 +1,43 @@
+{
+    "properties": {
+      "displayName": "PostgreSQL Flexible Server should be encrypted with a Customer Managed Key (CMK)",
+      "policyType": "Custom",
+      "mode": "All",
+      "description": "Create PostgreSQL Flexible Server with customer-managed keys encryption",
+      "metadata": {
+        "category": "DataHandling-Encryption-Audit"
+      },
+      "name": "PostgreSQLFlexibleCMK",
+      "parameters": {
+        "effect": {
+          "type": "String",
+          "allowedValues": [
+            "Audit",
+            "Deny",
+            "Disabled"
+          ],
+          "defaultValue": "Deny"
+        }
+      },
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "equals": "Microsoft.DBForPostgreSql/flexibleServers",
+              "field": "type"
+            },
+            {
+              "not": {
+                "field": "Microsoft.DBForPostgreSql/flexibleServers/dataEncryption.type",
+                "like": "AzureKeyVault"
+              }
+            }
+          ]
+        },
+        "then": {
+          "effect": "[parameters('effect')]"
+        }
+      }
+    }
+  }
+  

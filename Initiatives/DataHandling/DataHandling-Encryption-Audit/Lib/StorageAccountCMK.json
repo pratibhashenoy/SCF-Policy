@@ -1,0 +1,43 @@
+{
+    "properties": {
+      "displayName": "Storage account should be encrypted with a Customer Managed Key (CMK)",
+      "policyType": "Custom",
+      "mode": "All",
+      "description": "Create Storage Account with customer-managed keys encryption",
+      "metadata": {
+        "category": "DataHandling-Encryption-Audit"
+      },
+      "name": "StorageAccountCMK",
+      "parameters": {
+        "effect": {
+          "type": "String",
+          "allowedValues": [
+            "Audit",
+            "Deny",
+            "Disabled"
+          ],
+          "defaultValue": "Audit"
+        }
+      },
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "equals": "Microsoft.Storage/storageAccounts",
+              "field": "type"
+            },
+            {
+              "not": {
+                "field": "Microsoft.Storage/storageAccounts/encryption.keySource",
+                "like": "Microsoft.Keyvault"
+              }
+            }
+          ]
+        },
+        "then": {
+          "effect": "[parameters('effect')]"
+        }
+      }
+    }
+  }
+  

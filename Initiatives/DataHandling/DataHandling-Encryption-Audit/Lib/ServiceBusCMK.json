@@ -1,0 +1,43 @@
+{
+    "properties": {
+      "displayName": "Service Bus should be encrypted with a Customer Managed Key (CMK)",
+      "policyType": "Custom",
+      "mode": "All",
+      "description": "Create Service Bus with customer-managed keys encryption",
+      "metadata": {
+        "category": "DataHandling-Encryption-Audit"
+      },
+      "name": "ServiceBusCMK",
+      "parameters": {
+        "effect": {
+          "type": "String",
+          "allowedValues": [
+            "Audit",
+            "Deny",
+            "Disabled"
+          ],
+          "defaultValue": "Deny"
+        }
+      },
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "equals": "Microsoft.ServiceBus/Namespaces",
+              "field": "type"
+            },
+            {
+              "not": {
+                "field": "Microsoft.ServiceBus/Namespaces/encryption.keySource",
+                "like": "Microsoft.KeyVault"
+              }
+            }
+          ]
+        },
+        "then": {
+          "effect": "[parameters('effect')]"
+        }
+      }
+    }
+  }
+  
