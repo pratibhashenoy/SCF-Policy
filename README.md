@@ -1,30 +1,6 @@
-# ce-terraform-policy
-Repository for Azure Policy implementation via Terraform code, created by a Microsoft ISD team. The team has proposed a grouping of policies into four categories that each contain several initiatives.  Currently this repo contains Terraform code for implementing the following initiatives in the **Operations** and **DataHandling** category only (**Network Category** is in progress):
+# Overview
 
-**Operations Category:**
-  - Ops-Alerting-Audit
-  - Ops-Cost-Management-Audit
-  - Ops-Cost-Management-Enable
-  - Ops-Logging-Audit
-  - Ops-Logging-Enable
-  - Ops-Management
-  - Ops-Monitoring-Audit
-  - Ops-Monitoring-Enable
-  - Ops-Threat-Protection-Audit
-  - Ops-Threat-Protection-Enable
-
-**DataHandling Category:**
-  - DataHandling-BCDR-Audit
-  - DataHandling-BCDR-Enable
-  - DataHandling-Encryption-Audit
-  - DataHandling-Key-Management-Audit
-
-## Overview
-
-
- It is advisable to define Policy and Initiative at the Management Group level for optimal governance. However, this can be adapted to the customer’s preference, allowing for definitions at either the Management Group or Subscription level.
-
-## Terraform code for Azure Policy implementation
+## Terraform code for Azure Policy implementation along with YML for deployment using GitHub Actions
 
 This Terraform code is used to implement Azure Policies that are grouped into initiatives from the proposed security categories: Data Handling, Network, Operations, Identity and Access.
 
